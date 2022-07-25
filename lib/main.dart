@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_complete_guide/helpers/custom_route.dart';
+import 'package:flutter_complete_guide/providers/auth.dart';
 import 'package:flutter_complete_guide/providers/cart.dart';
 import 'package:flutter_complete_guide/providers/orders.dart';
+import 'package:flutter_complete_guide/screens/auth_screen.dart';
 import 'package:flutter_complete_guide/screens/cart_screen.dart';
 import 'package:flutter_complete_guide/screens/edit_product_screen.dart';
 import 'package:flutter_complete_guide/screens/orders_screen.dart';
+import 'package:flutter_complete_guide/screens/splash_screen.dart';
 import 'package:flutter_complete_guide/screens/user_products_screen.dart';
 import 'package:provider/provider.dart';
 
 import "./screens/products_overview_screen.dart";
 import './screens/product_detail_screen.dart';
 import 'providers/products.dart';
+
 
 
 void main() => runApp(MyApp());
@@ -19,21 +24,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(
-    //   // for 3.00 providers u use builder
-    //   // for 4.00 version provider u use create
-      create: (ctx) =>Products(),
-    //OR USING THIS IN CHANGE NOTIFIERPROVIDER
-    // return ChangeNotifierProvider.value(
-    //   value: Products(),
-        ),
+        ChangeNotifierProvider.value(
+            value: Auth()
+            
+            ),
+    //     ChangeNotifierProvider(
+    // //   // for 3.00 providers u use builder
+    // //   // for 4.00 version provider u use create
+    //   create: (ctx) =>Products(),
+    // //OR USING THIS IN CHANGE NOTIFIERPROVIDER
+    // // return ChangeNotifierProvider.value(
+    // //   value: Products(),
+    //     ),
+        ChangeNotifierProxyProvider<Auth, Products>(
+          // create:(ctx)=>Products(),
+           update:(ctx,auth,previousProducts)=>
+            Products(
+              auth.token,
+              auth.userId,
+              previousProducts == null? []: previousProducts.items)
+           
+           ),
+       
 
         ChangeNotifierProvider(
           create: (ctx) =>Cart(),
           ),
 
-        ChangeNotifierProvider.value(
-          value: Orders()
+        ChangeNotifierProxyProvider<Auth, Orders>(
+          update:(ctx, auth, previousOrders)=> 
+          Orders(auth.token,auth.userId, previousOrders==null ? [] 
+          :
+          previousOrders.orders
+          ),
           
           )
 
@@ -43,15 +66,36 @@ class MyApp extends StatelessWidget {
     
     
     
-      child: MaterialApp(
+      child:Consumer<Auth>(
+        builder:(ctx, auth, _) => 
+       MaterialApp(
         title: 'MyShop',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           //accentColor: Colors.deepOrange,
-          fontFamily: 'Lato'
+          fontFamily: 'Lato',
+          pageTransitionsTheme: PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android:CustomPageTransitionBuilder(),
+              TargetPlatform.iOS:CustomPageTransitionBuilder(),
+            }
+            
+            ),
         ),
-        home: ProductOverviewScreen(),
+        // home: AuthScreen(),
+        home: auth.isAuth ?
+        ProductOverviewScreen()
+        :
+        FutureBuilder(
+          future:auth.tryAutoLogin() ,
+          builder: (ctx, authResultSnapshot)=>
+          authResultSnapshot.connectionState == ConnectionState.waiting?
+          SplashScreen()
+          :
+          AuthScreen(),
+        ),
         routes: {
+          
           ProductDetailScreen.routeName : (ctx)=>ProductDetailScreen(),
           
           CartScreen.routeName : (ctx)=>CartScreen(),
@@ -60,6 +104,7 @@ class MyApp extends StatelessWidget {
           EditProductScreen.routeName: (ctx)=>EditProductScreen(),
        
         },
+       )
       ),
     );
   }

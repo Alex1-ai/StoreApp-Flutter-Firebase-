@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_complete_guide/providers/auth.dart';
 import 'package:flutter_complete_guide/providers/cart.dart';
 import '../screens/product_detail_screen.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +15,7 @@ class ProductItem extends StatelessWidget {
     // setting up a provider to pass data
     final product = Provider.of<Product>(context, listen: false);
     final cart = Provider.of<Cart>(context, listen: false);
+    final authData = Provider.of<Auth>(context,listen: false);
     print("Product rebuilds");
     return ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -28,10 +30,22 @@ class ProductItem extends StatelessWidget {
                   
                   );
               },
-              child: Image.network(product.imageUrl,
-              fit: BoxFit.cover,
+              child:Hero(
+                tag: product.id,
+                child: FadeInImage(
+                  placeholder: AssetImage("assets/images/empty.png"), 
+                  image: NetworkImage(product.imageUrl),
+                  fit: BoxFit.cover,
+                  
+                  ),
+              )
+              //  Image.network(product.imageUrl,
+              // fit: BoxFit.cover,
                 
-              ),
+              // ),
+
+
+
             ),
             footer: GridTileBar(
               backgroundColor: Colors.black54,
@@ -42,7 +56,7 @@ class ProductItem extends StatelessWidget {
               leading: Consumer<Product>(
       builder: (ctx, product, child)=> IconButton(
                 onPressed: (){
-                  product.toggleFavoriteStatus();
+                  product.toggleFavoriteStatus(authData.token, authData.userId);
                 },
                  icon: Icon( product.isFavorite? Icons.favorite: Icons.favorite_border),
                  color: Colors.pinkAccent,

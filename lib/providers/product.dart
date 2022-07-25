@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class Product with ChangeNotifier{
   final String id;
@@ -22,10 +24,35 @@ class Product with ChangeNotifier{
   
   
   );
+  void _setFavValue(bool newValue){
+    isFavorite = newValue;
+    notifyListeners();
+  }
 
-  void toggleFavoriteStatus(){
+
+  Future<void> toggleFavoriteStatus(String token, String userId)async{
+    // incase it fail it can roil back
+    final oldStatus = isFavorite;
     isFavorite = !isFavorite;
     notifyListeners();
+     var url = Uri.parse("https://ecomflutter-df9fb-default-rtdb.firebaseio.com/userFavorites/$userId/$id.json?auth=$token");
+    try{
+    final response = await http.put(url,
+    body: json.encode(
+      isFavorite,
+    )
+    
+    );
+    if (response.statusCode >= 400){
+         _setFavValue(oldStatus);
+         
+
+    }
+ 
+    }catch(error){
+      _setFavValue(oldStatus);
+      
+    }
   }
   
 
